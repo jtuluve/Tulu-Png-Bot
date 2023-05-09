@@ -4,7 +4,7 @@ const sqlite3 = require("sqlite3").verbose();
 const db = new sqlite3.Database("userdata.db");
 const http = require('https');
 db.run(
-  "CREATE TABLE IF NOT EXISTS userdata (userid INTEGER UNIQUE, color TEXT DEFAULT 'red', font TEXT DEFAULT 'baravu', pngcount INTEGER DEFAULT 0)"
+  "CREATE TABLE IF NOT EXISTS userdata (userid INTEGER UNIQUE, color TEXT DEFAULT 'red', font TEXT DEFAULT 'baravu', pngcount INTEGER DEFAULT 0,lastcommand TEXT DEFAULT '/start')"
 );
 // Bot code
 //bot.telegram.setWebhook('https://mesquite-private-jay.glitch.me/');
@@ -214,17 +214,7 @@ bot.command("colors", (ctx) => {
     "gold",
     "khaki",
     "indigo",
-    "silver",
-    "turquoise",
-    "violet",
-    "beige",
-    "orchid",
-    "plum",
-    "salmon",
-    "sienna",
-    "tan",
-    "wheat",
-  ];
+    "silver", "turquoise", "violet", "beige", "orchid", "plum", "salmon", "sienna", "tan", "wheat",];
   const colorsString = colors.join(", ");
   ctx.reply("available colors: " + colorsString);
 });
@@ -266,10 +256,9 @@ let color = row.color || "red";
 let font = row.font || "baravu"
 const axios = require('axios');
 
-axios.get(`https://mesquite-private-jay.glitch.me/image?text=${txt}&font=${font}&color=${color}`, { timeout: 10000 })
+axios.get(`https://tulu-png-api.glitch.me/image?text=${txt}&font=${font}&color=${color}`, { timeout: 150000 })
   .then(response => {
-    ctx.sendDocument({ url: 'https://mesquite-private-jay.glitch.me/outputt.png', filename: "image.png" });
-    console.log(response.data);
+    ctx.sendDocument({ url: response.data.url, filename: "image.png" });
   })
   .catch(error => {
     // handle error here
@@ -325,7 +314,7 @@ console.log(txt)
 });
 bot.launch({
   webhook:{
-    domain: "https://Tulu-Png-Bot.jtuluve.repl.co",
+    domain: "https://tulu-png-bot-1.jtuluve.repl.co",
     port: process.env.PORT
   }
 });
