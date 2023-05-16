@@ -1,0 +1,5 @@
+userdata.db
+node_modules
+.env
+.replit
+replit.nix
