@@ -1,326 +1,166 @@
-const { Telegraf } = require("telegraf");
-const bot = new Telegraf(process.env.BOT_TOKEN);
+//local process env
+require('dotenv').config();
+//imports
+const { Telegraf, Markup } = require("telegraf");
+const { message } = require("telegraf/filters")
 const sqlite3 = require("sqlite3").verbose();
+const axios = require('axios');
+
+//database
 const db = new sqlite3.Database("userdata.db");
-const http = require('https');
-db.run(
-  "CREATE TABLE IF NOT EXISTS userdata (userid INTEGER UNIQUE, color TEXT DEFAULT 'red', font TEXT DEFAULT 'baravu', pngcount INTEGER DEFAULT 0,lastcommand TEXT DEFAULT '/start')"
-);
+
+//create userdata table if not exists
+db.run(`CREATE TABLE IF NOT EXISTS userdata (userid INTEGER UNIQUE, color STRING DEFAULT 'red', font STRING DEFAULT baravu)`)
+const bot = new Telegraf(process.env.BOT_TOKEN);
+//const http = require('https');
 // Bot code
 //bot.telegram.setWebhook('https://mesquite-private-jay.glitch.me/');
 
-bot.on("message", (ctx, next) => {
-  db.get(
-    "SELECT userId FROM userdata WHERE userId = ?",
-    [ctx.update.message.from.id],
-    (err, row) => {
-      if (err) {
-        console.error(err.message);
-      } else {
-        if (!row) {
-          // userId does not exist in the table, insert a new row with default values
-          db.run(
-            "INSERT INTO userdata (userId, pngCount) VALUES (?, ?)",
-            [ctx.update.message.from.id, 0],
-            (err) => {
-              if (err) {
-                console.error(err.message);
-              }
-            }
-          );
-        }
-      }
-    }
+bot.on(message, (ctx, next) => {
+  dbcreate(ctx.chat.id)
+  return next();
+})
+bot.command(["start"], (ctx) => {
+  ctx.replyWithMarkdownV2(
+    "*Hello there!! Read this before using the bot*\nI can send a png image in *Tulu script* if you provide the text in *Kannada or Malayalam script*. \n You can select your own color and font. \nFor a list of available commands send /commands or /help."
   );
-  console.log(__dirname);
-  next();
-});
-
-bot.command(["help", "start"], (ctx) => {
-  ctx.replyWithMarkdown(
-    "⚠️ *Read this before using this bot* ⚠️\nNote:\n- This bot returns png image in Tulu Script... \n- You can send texts using Kannada or Malayalam script and in Tulu language to get png image\n- Send your text directly without any commands to transcript"
-  );
-  console.log(ctx);
 });
 
 // Command to set user color
-bot.command("setcolor", (ctx) => {
-  const color = ctx.message.text.split(" ")[1];
+bot.command('setcolor', async (ctx) => {
+  return await ctx.reply('choose color:', Markup.inlineKeyboard([
+    [
+      Markup.button.callback("black", "setcolor black"),
+      Markup.button.callback("white", "setcolor white"),
+      Markup.button.callback("red", "setcolor red"),
+    ], [
+      Markup.button.callback("green", "setcolor green"),
+      Markup.button.callback("blue", "setcolor blue"),
+      Markup.button.callback("yellow", "setcolor yellow")
+    ], [
+      Markup.button.callback("cyan", "setcolor cyan"),
+      Markup.button.callback("gray", "setcolor gray"),
+      Markup.button.callback("orange", "setcolor orange")
+    ], [
+      Markup.button.callback("brown", "setcolor brown"),
+      Markup.button.callback("purple", "setcolor purple"),
+      Markup.button.callback("pink", "setcolor pink")
+    ], [
+      Markup.button.callback("maroon", "setcolor maroon"),
+      Markup.button.callback("violet", "setcolor violet"),
+      Markup.button.callback("gold", "setcolor gold")
+    ]
+  ])
+  )
+});
+//user color set action
+bot.action(/setcolor (.+)/, async (ctx) => {
+  await dbupdate(ctx.update.callback_query.from.id, ["color"], [ctx.match[1]])
+  ctx.reply(`Your color has been updated to ${ctx.match[1]}`)
+  return
+})
 
-  // Array of allowed colors
-  const colors = [
-    "black",
-    "white",
-    "red",
-    "green",
-    "blue",
-    "yellow",
-    "cyan",
-    "gray",
-    "orange",
-    "brown",
-    "purple",
-    "pink",
-    "olive",
-    "navy",
-    "maroon",
-    "teal",
-    "gold",
-    "indigo",
-    "silver",
-    "turquoise",
-    "violet",
-    "salmon",
-    "tan",
-    "wheat",
-  ];
-  const colorsString = colors.join(", ");
-  // Check if the given color is allowed
-  if (color && colors.includes(color)) {
-    db.get(
-      "SELECT * FROM userdata WHERE userid = ?",
-      [ctx.update.message.from.id],
-      (err, row) => {
-        if (err) {
-          console.error(err.message);
-        }
-        // if userr exists, update color value
-        if (row) {
-          db.run(
-            "UPDATE userdata SET color = ? WHERE userid = ?",
-            [color, ctx.update.message.from.id],
-            (err) => {
-              if (err) {
-                console.error(err.message);
-              }
-              console.log(
-                `Color value updated for user ${ctx.update.message.from.id}`
-              );
-            }
-          );
-        }
-        // if user does not exist, create new row with userid and color
-        else {
-          db.run(
-            "INSERT INTO userdata (userid, color) VALUES (?, ?)",
-            [ctx.update.message.from.id, color],
-            (err) => {
-              if (err) {
-                console.error(err.message);
-              }
-              console.log(
-                `New row added for user ${ctx.update.message.from.id}`
-              );
-            }
-          );
-        }
-      }
-    );
-    // Reply with confirmation message
-    ctx.reply(`Your text color has been set to ${color}`);
-  } else {
-    // Reply with error message
-    ctx.reply(
-      `Itseems you did something wrong. Please run the command as /setcolor {color}\nExample: /setcolor black\n available colors: ${colorsString}`
-    );
-  }
-  console.log(ctx);
+
+bot.command("setfont", async (ctx) => {
+  return await ctx.reply('choose font:', Markup.inlineKeyboard([
+    [
+      Markup.button.callback("baravu", "setfont baravu"),
+      Markup.button.callback("mandara", "setfont mandara"),
+      Markup.button.callback("allige", "setfont allige"),
+    ]
+  ])
+  )
 });
 
-bot.command("setfont", (ctx) => {
-  const font = ctx.message.text.split(" ")[1];
+//user font set action
+bot.action(/setfont (.+)/, (ctx) => {
+  ctx.reply(`Your font has been updated to: ${ctx.match[1]}`)
+  dbupdate(ctx.update.callback_query.from.id, "font", ctx.match[1])
+  return
+})
 
-  // Array of allowed fonts
-  const fonts = ["baravu", "allige", "mandara"];
+bot.on(message("sticker"), (ctx) => ctx.reply("🙄"));
 
-  // Check if the given font is allowed
-  if (font && fonts.includes(font)) {
-    db.get(
-      "SELECT * FROM userdata WHERE userid = ?",
-      [ctx.update.message.from.id],
-      (err, row) => {
-        if (err) {
-          console.error(err.message);
-        }
-        // if user exists, update font value
-        if (row) {
-          db.run(
-            "UPDATE userdata SET font = ? WHERE userid = ?",
-            [font, ctx.update.message.from.id],
-            (err) => {
-              if (err) {
-                console.error(err.message);
-              }
-              console.log(
-                `Font value updated for user ${ctx.update.message.from.id}`
-              );
-            }
-          );
-        }
-        // if user does not exist, create new row with userid and font
-        else {
-          db.run(
-            "INSERT INTO userdata (userid, font) VALUES (?, ?)",
-            [ctx.update.message.from.id, font],
-            (err) => {
-              if (err) {
-                console.error(err.message);
-              }
-              console.log(
-                `New row added for user ${ctx.update.message.from.id}`
-              );
-            }
-          );
-        }
-      }
-    );
-    // Reply with confirmation message
-    ctx.reply(`Your font has been set to ${font}`);
-  } else {
-    // Reply with error message
-    ctx.reply(
-      `It seems you did something wrong. Please run the command as /setfont {font}\nExample: /setfont baravu\nAvailable fonts: ${fonts}`
-    );
-  }
-  console.log(ctx);
-});
-
-bot.command("fonts", (ctx) => {
-  const fonts = ["baravu", "allige", "mandara"];
-  const fontsString = fonts.join(", ");
-  ctx.reply("available fonts: " + fontsString);
-});
-
-bot.command("colors", (ctx) => {
-  const colors = [
-    "black",
-    "white",
-    "red",
-    "green",
-    "blue",
-    "yellow",
-    "cyan",
-    "magenta",
-    "gray",
-    "orange",
-    "brown",
-    "purple",
-    "pink",
-    "olive",
-    "navy",
-    "maroon",
-    "teal",
-    "coral",
-    "gold",
-    "khaki",
-    "indigo",
-    "silver", "turquoise", "violet", "beige", "orchid", "plum", "salmon", "sienna", "tan", "wheat",];
-  const colorsString = colors.join(", ");
-  ctx.reply("available colors: " + colorsString);
-});
-
-bot.on("sticker", (ctx) => ctx.reply("🙄"));
-
-bot.on("text", (ctx) => {
-  let txt = ctx.message.text;
-  
-  txt = transcript(txt);
-txt = encodeURIComponent(txt)
-  db.get(
-    "SELECT * FROM userdata WHERE userid = ?",
-    [ctx.update.message.from.id],
-    (err, row) => {
-      if (err) {
-        console.error(err.message);
-      } else if (!row) {
-const options = {
-  hostname: `mesquite-private-jay.glitch.me`,
-  path: `/image?text=${txt}&font=baravu&color=red`,
-  port: 3000,
-  method: 'GET'
-};
-
-const req = http.request(options, (res) => {
-  ctx.sendDocument({ url: "https://mesquite-private-jay.glitch.me/outputt.png", filename: "image.png" });
-        });
-req.on('error', error => {
-  console.error(error);
-});
-req.setTimeout(10000, () => {
-  req.abort(); // abort the request if it takes more than 5 seconds
-  console.error('Request timed out');
-});
-req.end();
-} else {
-let color = row.color || "red";
-let font = row.font || "baravu"
-const axios = require('axios');
-
-axios.get(`https://tulu-png-api.glitch.me/image?text=${txt}&font=${font}&color=${color}`, { timeout: 150000 })
-  .then(response => {
-    ctx.sendDocument({ url: response.data.url, filename: "image.png" });
+bot.command("mycolor", (ctx) => {
+  dbget(ctx.message.from.id, (row) => {
+    if (row)
+      ctx.reply(`Your default png color is ${row.color}`)
+    else ctx.reply("Your default png color is red")
   })
-  .catch(error => {
-    // handle error here
-    console.error(error);
-  });
-/*const options = {
-  hostname: `mesquite-private-jay.glitch.me`,
-  path: `/image?text=${txt}&font=${font}&color=${color}`,
-  method: 'GET',
-  timeout: 10000
-};
+})
 
-const req = http.request(options, (res) => {
-  ctx.sendDocument({ url: 'https://mesquite-private-jay.glitch.me/outputt.png', filename: "image.png" });
-  res.on('data', (d) => {
-    process.stdout.write(d);
-  });
-});
+bot.command("myfont", (ctx) => {
+  dbget(ctx.message.from.id, (row) => {
+    if (row)
+      ctx.reply(`Your default png font is ${row.color}`)
+    else ctx.reply("Your default png font is baravu")
+  })
+})
 
-req.on('error', (e) => {
-  console.error(e);
+
+bot.command("myfont", (ctx) => {
+  dbget(ctx.message.from.id, (row) => {
+    ctx.reply(`You have selected ${row.color} as your default color for png`)
+  })
+})
+
+bot.on(message("text"), (ctx) => {
+  ctx.reply("loading...")
+  dbget(ctx.message.chat.id, (row) => {
+    let txt = ctx.message.text;
+
+    txt = transcript(txt);
+    txt = encodeURIComponent(txt)
+    let color = row ? row.color : "red";
+    let font = row ? row.font : "baravu";
+
+    axios.get(`https://tulu-png-api.glitch.me/image?text=${txt}&font=${font}&color=${color}`)
+      .then(response => {
+        ctx.sendDocument({ url: response.data.url, filename: "image.png" });
+      })
+      .catch(error => {
+        console.error(error);
+      });
+  })
+
+
+
 });
-req.setTimeout(10000, () => {
-  req.abort(); // abort the request if it takes more than 5 seconds
-  console.error('Request timed out');
-});
-req.end();*/
-console.log(txt)
-        
-        }
-    }
-  );
-  db.run(
-    "UPDATE userdata SET pngCount = pngCount + ? WHERE userId = ?",
-    [1, ctx.update.message.from.id],
-    (err) => {
-      if (err) {
-        console.error(err.message);
-      }
-    }
-  );
-  db.all(
-    "SELECT * FROM userdata WHERE userId = ?",
-    [ctx.update.message.from.id],
-    (err, rows) => {
-      if (err) {
-        console.error(err.message);
-      } else {
-        console.log(rows);
-      }
-    }
-  );
-});
-bot.launch({
+bot.launch(/*{
   webhook:{
     domain: "https://tulu-png-bot-1.jtuluve.repl.co",
     port: process.env.PORT
   }
-});
+}*/);
+
+async function dbupdate(userid, key, values) {
+  if (key.length !== values.length) { console.log("key values length difference error"); return }
+  await dbcreate(userid);
+  let sqlQuery = ""
+  for (let i = 0; i < key.length; i++) {
+    sqlQuery += `${key[i]}="${values[i]}",`
+  }
+  sqlQuery = sqlQuery.slice(0, -1);
+  await db.run(`UPDATE userdata SET ${sqlQuery} WHERE userid = ${userid}`, (err) => { if (err) console.log(err) })
+}
+
+function dbget(userid, callback) {
+  db.get(`SELECT * FROM userdata WHERE userid = ${userid}`, (err, row) => {
+    if (row) callback(row)
+    else callback(null)
+  })
+  return
+}
+function dbcreate(userid) {
+  db.run(`INSERT INTO userdata(userid) SELECT ${userid} WHERE NOT EXISTS (SELECT * FROM userdata WHERE userid=${userid})`, (err) => { if (err) console.log(err) })
+}
+async function dbdelete(userid) {
+  db.run(`DELETE FROM userdata WHERE userid=${userid}`, (err) => { if (err) console.log(err) })
+  return
+}
 
 // ** transliterate function **
-function transcript(txt) { 
+function transcript(txt) {
   txt = txt.replace(/್‍/g, "ä").replace(/‍/g, "");
 
   let E = txt.indexOf("ೆ*");
@@ -766,41 +606,7 @@ function transcript(txt) {
   let fa = txt.indexOf("fA");
   while (fa > -1) {
     var tt = [
-      "k",
-      "K",
-      "g",
-      "G",
-      "Z",
-      "c",
-      "C",
-      "j",
-      "J",
-      "z",
-      "q",
-      "Q",
-      "w",
-      "W",
-      "N",
-      "t",
-      "T",
-      "d",
-      "D",
-      "n",
-      "p",
-      "P",
-      "b",
-      "B",
-      "m",
-      "y",
-      "r",
-      "l",
-      "v",
-      "S",
-      "x",
-      "s",
-      "h",
-      "L",
-    ];
+      "k", "K", "g", "G", "Z", "c", "C", "j", "J", "z", "q", "Q", "w", "W", "N", "t", "T", "d", "D", "n", "p", "P", "b","B", "m", "y", "r", "l", "v", "S", "x", "s", "h", "L",];
 
     if (tt.includes(txt[fa + 2])) {
       txt = txt.slice(0, fa) + "fXA" + txt.slice(fa + 2);
