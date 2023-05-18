@@ -22,8 +22,7 @@ bot.on(message, (ctx, next) => {
 })
 bot.command(["start"], (ctx) => {
   ctx.replyWithMarkdownV2(
-    "*Hello there!! Read this before using the bot*\nI can send a png image in *Tulu script* if you provide the text in *Kannada or Malayalam script*. \n You can select your own color and font. \nFor a list of available commands send /commands or /help."
-  );
+    "*Hello there\\!\\! Read this before using the bot*\nI can send a png image in *Tulu script* if you provide the text in *Kannada or Malayalam script*\\. \n You can select your own color and font\\. \nFor a list of available commands send /commands or /help\\.");
 });
 
 // Command to set user color
@@ -92,16 +91,17 @@ bot.command("mycolor", (ctx) => {
 bot.command("myfont", (ctx) => {
   dbget(ctx.message.from.id, (row) => {
     if (row)
-      ctx.reply(`Your default png font is ${row.color}`)
+      ctx.reply(`Your default png font is ${row.font}`)
     else ctx.reply("Your default png font is baravu")
   })
 })
 
+bot.command("image", (ctx)=>{
+  ctx.reply("Send me the text in Kannada or Malyalam (in Tulu language) to get png image.")
+})
 
-bot.command("myfont", (ctx) => {
-  dbget(ctx.message.from.id, (row) => {
-    ctx.reply(`You have selected ${row.color} as your default color for png`)
-  })
+bot.command(["commands","command", "help"], ctx=>{
+  ctx.replyWithMarkdownV2("*Here is a list of available commands and their  short description:*\n/start \\- Get started\\!\\!\n/image \\- Generate png image\n/setfont \\- Set font for png text\n/setcolor \\- set color for png text\n/myfont \\- currently selected font\n/mycolor \\- currently selected color\n/commands \\- get a list of available commands")
 })
 
 bot.on(message("text"), (ctx) => {
@@ -126,12 +126,15 @@ bot.on(message("text"), (ctx) => {
 
 
 });
-bot.launch(/*{
-  webhook:{
-    domain: "https://tulu-png-bot-1.jtuluve.repl.co",
+bot.launch({
+  /*webhook:{
+    domain: "",
     port: process.env.PORT
   }
-}*/);
+}*/)
+.then(()=>{
+  console.log("listening..")
+})
 
 async function dbupdate(userid, key, values) {
   if (key.length !== values.length) { console.log("key values length difference error"); return }
@@ -606,7 +609,7 @@ function transcript(txt) {
   let fa = txt.indexOf("fA");
   while (fa > -1) {
     var tt = [
-      "k", "K", "g", "G", "Z", "c", "C", "j", "J", "z", "q", "Q", "w", "W", "N", "t", "T", "d", "D", "n", "p", "P", "b","B", "m", "y", "r", "l", "v", "S", "x", "s", "h", "L",];
+      "k", "K", "g", "G", "Z", "c", "C", "j", "J", "z", "q", "Q", "w", "W", "N", "t", "T", "d", "D", "n", "p", "P", "b", "B", "m", "y", "r", "l", "v", "S", "x", "s", "h", "L",];
 
     if (tt.includes(txt[fa + 2])) {
       txt = txt.slice(0, fa) + "fXA" + txt.slice(fa + 2);
