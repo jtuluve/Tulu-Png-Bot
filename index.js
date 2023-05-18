@@ -74,7 +74,7 @@ bot.command("setfont", async (ctx) => {
 //user font set action
 bot.action(/setfont (.+)/, (ctx) => {
   ctx.reply(`Your font has been updated to: ${ctx.match[1]}`)
-  dbupdate(ctx.update.callback_query.from.id, "font", ctx.match[1])
+  dbupdate(ctx.update.callback_query.from.id, ["font"], [ctx.match[1]])
   return
 })
 
@@ -104,19 +104,21 @@ bot.command(["commands","command", "help"], ctx=>{
   ctx.replyWithMarkdownV2("*Here is a list of available commands and their  short description:*\n/start \\- Get started\\!\\!\n/image \\- Generate png image\n/setfont \\- Set font for png text\n/setcolor \\- set color for png text\n/myfont \\- currently selected font\n/mycolor \\- currently selected color\n/commands \\- get a list of available commands")
 })
 
-bot.on(message("text"), (ctx) => {
-  ctx.reply("loading...")
-  dbget(ctx.message.chat.id, (row) => {
+bot.on(message("text"), async (ctx) => {
+  let msg = await bot.telegram.sendMessage(ctx.message.from.id, "It will take some time for me to generate png. Please wait..😇")
+  console.log(msg)
+  dbget(ctx.message.chat.id, async (row) => {
     let txt = ctx.message.text;
 
     txt = transcript(txt);
-    txt = encodeURIComponent(txt)
+    txt = encodeURIComponent(txt);
     let color = row ? row.color : "red";
     let font = row ? row.font : "baravu";
 
     axios.get(`https://tulu-png-api.glitch.me/image?text=${txt}&font=${font}&color=${color}`)
       .then(response => {
         ctx.sendDocument({ url: response.data.url, filename: "image.png" });
+        bot.telegram.deleteMessage(ctx.message.from.id, msg.message_id);
       })
       .catch(error => {
         console.error(error);
@@ -124,10 +126,9 @@ bot.on(message("text"), (ctx) => {
   })
 
 
-
 });
-bot.launch({
-  /*webhook:{
+bot.launch(/*{
+  webhook:{
     domain: "",
     port: process.env.PORT
   }
