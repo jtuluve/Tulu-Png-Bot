@@ -17,7 +17,7 @@ axios.get(`https://tulu-png-api.glitch.me/`)
 
 
 //create userdata table if not exists
-db.run(`CREATE TABLE IF NOT EXISTS userdata (userid INTEGER UNIQUE, color STRING DEFAULT 'red', font STRING DEFAULT baravu), format STRING DEFAULT png`)
+db.run(`CREATE TABLE IF NOT EXISTS userdata (userid INTEGER UNIQUE, color STRING DEFAULT 'red', font STRING DEFAULT baravu)`)
 const bot = new Telegraf(process.env.BOT_TOKEN);
 //const http = require('https');
 // Bot code
@@ -116,8 +116,6 @@ bot.on(message("sticker"), (ctx) => ctx.reply("❤️"));
 
 bot.on(message("text"), async (ctx) => {
   let msg = await bot.telegram.sendMessage(ctx.message.chat.id, "It will take some time for me to generate png. Please wait..😇")
-  dbget(ctx.message.from.id, async (row) => {
-  let msg = await bot.telegram.sendMessage(ctx.message.from.id, "It will take some time for me to generate png. Please wait..😇")
   dbget(ctx.message.chat.id, async (row) => {
     let txt = ctx.message.text;
 
@@ -135,9 +133,6 @@ bot.on(message("text"), async (ctx) => {
         console.error(error);
       });
   })
-})
-
-
 });
 bot.launch({
   webhook:{
