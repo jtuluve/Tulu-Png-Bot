@@ -11,6 +11,11 @@ const {dbcreate, dbget, dbupdate} = require("./dbfunc")
 //database
 const db = new sqlite3.Database("userdata.db");
 
+//ping png api
+axios.get(`https://tulu-png-api.glitch.me/`)
+
+
+
 //create userdata table if not exists
 db.run(`CREATE TABLE IF NOT EXISTS userdata (userid INTEGER UNIQUE, color STRING DEFAULT 'red', font STRING DEFAULT baravu), format STRING DEFAULT png`)
 const bot = new Telegraf(process.env.BOT_TOKEN);
@@ -88,7 +93,7 @@ bot.action(/setfont (.+)/, (ctx) => {
 bot.command("mycolor", (ctx) => {
   dbget(ctx.message.from.id, (row) => {
     if (row)
-      ctx.reply(`Your default png color is ${row.color}`)
+      ctx.reply(`Your default png color is ${row.color||red}`)
     else ctx.reply("Your default png color is red")
   })
 })
@@ -107,11 +112,13 @@ bot.command("image", (ctx) => {
 })
 
 
-bot.on(message("sticker"), (ctx) => ctx.reply("🙄"));
+bot.on(message("sticker"), (ctx) => ctx.reply("❤️"));
 
 bot.on(message("text"), async (ctx) => {
   let msg = await bot.telegram.sendMessage(ctx.message.chat.id, "It will take some time for me to generate png. Please wait..😇")
   dbget(ctx.message.from.id, async (row) => {
+  let msg = await bot.telegram.sendMessage(ctx.message.from.id, "It will take some time for me to generate png. Please wait..😇")
+  dbget(ctx.message.chat.id, async (row) => {
     let txt = ctx.message.text;
 
     txt = transcript(txt);
@@ -128,15 +135,16 @@ bot.on(message("text"), async (ctx) => {
         console.error(error);
       });
   })
+})
 
 
 });
-bot.launch(/*{
+bot.launch({
   webhook:{
-    domain: "",
+    domain: process.env.LINK,
     port: process.env.PORT
   }
-}*/)
+})
   .then(() => {
     console.log("listening..")
   })
